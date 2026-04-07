@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>문서 만들기 + Claude Code 마스터</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      background: #000000;
+      color: #F5F5F7;
+      overflow: hidden;
+    }
+
+    /* GNB */
+    .gnb {
+      position: fixed; top: 0; left: 0; right: 0; height: 56px;
+      background: rgba(0,0,0,0.92); backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 40px; z-index: 200;
+    }
+    .gnb-logo {
+      display: flex; align-items: center; gap: 12px;
+      font-weight: 600; font-size: 14px; color: rgba(255,255,255,0.85);
+    }
+    .gnb-logo .icon {
+      width: 32px; height: 32px; background: rgba(255,255,255,0.1);
+      border-radius: 8px; display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .gnb-sections { display: flex; gap: 6px; }
+    .gnb-section {
+      padding: 6px 14px; font-size: 12px; color: rgba(255,255,255,0.4);
+      border-radius: 6px; cursor: pointer; transition: all 0.2s;
+    }
+    .gnb-section:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.05); }
+    .gnb-section.active { color: #fff; background: rgba(255,255,255,0.08); }
+    .gnb-progress { display: flex; align-items: center; gap: 12px; }
+    .gnb-progress-text { font-size: 12px; color: rgba(255,255,255,0.4); }
+    .gnb-progress-bar { width: 120px; height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
+    .gnb-progress-fill { height: 100%; background: #FFFFFF; border-radius: 2px; transition: width 0.3s; }
+
+    /* Slides */
+    .slides-container {
+      width: 100vw; height: calc(100vh - 56px); margin-top: 56px;
+      display: flex; align-items: stretch; justify-content: stretch;
+    }
+    .slide {
+      display: none; width: 100%; height: 100%;
+      padding: 64px 120px; position: relative;
+      background: #000; flex-direction: column;
+    }
+    .slide.active { display: flex; }
+
+    /* Cover / Section slides */
+    .slide-cover {
+      background: #000; align-items: center; justify-content: center; text-align: center;
+    }
+    .slide-cover .main-title {
+      font-size: 68px; font-weight: 700; letter-spacing: -0.03em;
+      line-height: 1.15; color: #FFFFFF; margin-bottom: 28px; position: relative; z-index: 1;
+    }
+    .slide-cover .subtitle {
+      font-size: 26px; font-weight: 300; color: rgba(255,255,255,0.5);
+      margin-bottom: 60px; position: relative; z-index: 1;
+    }
+    .slide-cover .meta {
+      font-size: 16px; color: rgba(255,255,255,0.3); position: relative; z-index: 1;
+      line-height: 1.8;
+    }
+    .slide-cover .meta .name { color: rgba(255,255,255,0.6); font-weight: 500; }
+
+    /* Stars bg for cover */
+    .stars-bg {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; overflow: hidden; z-index: 0;
+      background-image:
+        radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 25% 40%, rgba(255,255,255,0.3), transparent),
+        radial-gradient(1.5px 1.5px at 40% 20%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 60% 60%, rgba(255,255,255,0.3), transparent),
+        radial-gradient(1px 1px at 75% 30%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1.5px 1.5px at 85% 70%, rgba(255,255,255,0.3), transparent),
+        radial-gradient(1px 1px at 90% 10%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 15% 80%, rgba(255,255,255,0.3), transparent),
+        radial-gradient(1px 1px at 50% 90%, rgba(255,255,255,0.4), transparent);
+    }
+
+    .slide-section {
+      background: #000; align-items: flex-start; justify-content: center;
+    }
+    .slide-section .sec-num {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.18em;
+      color: rgba(255,255,255,0.3); text-transform: uppercase; margin-bottom: 20px;
+    }
+    .slide-section .sec-title {
+      font-size: 62px; font-weight: 700; letter-spacing: -0.03em;
+      line-height: 1.15; color: #FFFFFF; margin-bottom: 24px;
+    }
+    .slide-section .sec-desc {
+      font-size: 20px; color: rgba(255,255,255,0.45); font-weight: 300; max-width: 600px;
+    }
+    .slide-section .sec-time {
+      margin-top: 40px; display: inline-block;
+      padding: 8px 20px; border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 100px; font-size: 13px; color: rgba(255,255,255,0.4);
+    }
+
+    /* Content slide */
+    .slide-content { background: #000; }
+    .slide-title {
+      font-size: 44px; font-weight: 700; letter-spacing: -0.02em;
+      line-height: 1.2; color: #FFFFFF; margin-bottom: 40px;
+    }
+    .slide-number {
+      font-size: 12px; font-weight: 700; letter-spacing: 0.12em;
+      color: rgba(255,255,255,0.3); text-transform: uppercase; margin-bottom: 10px;
+    }
+    .content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* Cards */
+    .card {
+      background: #1C1C1E; border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px; padding: 28px; transition: all 0.25s;
+    }
+    .card:hover {
+      border-color: rgba(255,255,255,0.22); transform: translateY(-3px);
+      box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+    }
+    .card-grid { display: grid; gap: 24px; }
+    .card-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+    .card-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+    .card-grid.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; }
+    .card-icon { font-size: 28px; margin-bottom: 12px; }
+    .card-title { font-size: 17px; font-weight: 600; color: #F5F5F7; margin-bottom: 8px; }
+    .card-desc { font-size: 13px; color: rgba(255,255,255,0.5); line-height: 1.6; }
+
+    /* Table */
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th {
+      padding: 12px 16px; background: rgba(255,255,255,0.07);
+      font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.5);
+      text-align: left; letter-spacing: 0.05em; border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .data-table td {
+      padding: 12px 16px; font-size: 14px; color: rgba(255,255,255,0.75);
+      border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: top; line-height: 1.55;
+    }
+    .data-table tr:hover td { background: rgba(255,255,255,0.025); }
+    .data-table td strong { color: #fff; font-weight: 600; }
+    .data-table td .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 4px;
+      font-size: 11px; background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6);
+    }
+    .data-table td code {
+      font-family: 'SF Mono', 'Menlo', monospace; font-size: 12px;
+      background: rgba(255,255,255,0.1); padding: 1px 6px; border-radius: 4px;
+      color: rgba(255,255,255,0.85);
+    }
+
+    /* Code block */
+    .code-block {
+      background: #1C1C1E; border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px; padding: 20px 24px;
+      font-family: 'SF Mono', 'Menlo', monospace; font-size: 13px;
+      line-height: 1.8; color: rgba(255,255,255,0.85); overflow-x: auto;
+    }
+    .code-block .comment { color: rgba(255,255,255,0.3); }
+    .code-block .hl { color: #fff; font-weight: 600; }
+
+    /* List */
+    .list { list-style: none; }
+    .list li {
+      display: flex; align-items: flex-start; gap: 14px;
+      margin-bottom: 18px; font-size: 17px; line-height: 1.6;
+      color: rgba(255,255,255,0.72);
+    }
+    .list li::before {
+      content: ''; width: 7px; height: 7px;
+      background: rgba(255,255,255,0.45); border-radius: 50%;
+      margin-top: 9px; flex-shrink: 0;
+    }
+    .list.small li { font-size: 14px; margin-bottom: 12px; }
+    .list.small li::before { width: 5px; height: 5px; margin-top: 7px; }
+
+    /* Numbered list */
+    .numbered-list { list-style: none; counter-reset: item; }
+    .numbered-list li {
+      display: flex; align-items: flex-start; gap: 18px;
+      margin-bottom: 24px; font-size: 18px; line-height: 1.55;
+      color: rgba(255,255,255,0.8); counter-increment: item;
+    }
+    .numbered-list li::before {
+      content: counter(item);
+      width: 30px; height: 30px; background: #fff; color: #000;
+      border-radius: 7px; display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; flex-shrink: 0;
+    }
+
+    /* Highlight box */
+    .highlight-box {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+      border-left: 3px solid rgba(255,255,255,0.55); border-radius: 0 12px 12px 0;
+      padding: 24px 36px; display: flex; align-items: center; gap: 20px;
+    }
+    .highlight-box .icon { font-size: 32px; opacity: 0.8; }
+    .highlight-box .text { font-size: 18px; line-height: 1.55; color: rgba(255,255,255,0.7); }
+    .highlight-box .text strong { color: #fff; }
+
+    /* Compare */
+    .compare-card {
+      border-radius: 16px; padding: 24px; transition: all 0.25s;
+    }
+    .compare-card.neg {
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.09);
+    }
+    .compare-card.pos {
+      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.18);
+    }
+    .compare-card:hover { transform: translateY(-3px); }
+    .compare-card .ctitle {
+      font-size: 16px; font-weight: 600; margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .compare-card.neg .ctitle { color: rgba(255,255,255,0.5); }
+    .compare-card.pos .ctitle { color: #fff; }
+
+    /* Flow */
+    .flow { display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; }
+    .flow-item {
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px; padding: 14px 22px; text-align: center; transition: all 0.25s;
+    }
+    .flow-item:hover { background: rgba(255,255,255,0.09); transform: translateY(-3px); }
+    .flow-item .label { font-size: 14px; font-weight: 600; color: #F5F5F7; margin-bottom: 3px; }
+    .flow-item .desc { font-size: 12px; color: rgba(255,255,255,0.4); }
+    .flow-arrow { color: rgba(255,255,255,0.22); font-size: 18px; }
+
+    /* Step boxes */
+    .step-row { display: flex; gap: 16px; margin-bottom: 16px; }
+    .step-num {
+      width: 28px; height: 28px; background: rgba(255,255,255,0.12);
+      border-radius: 6px; display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; margin-top: 2px;
+    }
+    .step-body { flex: 1; }
+    .step-title { font-size: 15px; font-weight: 600; color: #F5F5F7; margin-bottom: 4px; }
+    .step-desc { font-size: 13px; color: rgba(255,255,255,0.5); line-height: 1.6; }
+
+    /* Pill tag */
+    .pill {
+      display: inline-block; padding: 3px 12px; border-radius: 100px;
+      font-size: 12px; border: 1px solid rgba(255,255,255,0.18);
+      color: rgba(255,255,255,0.55); margin: 2px;
+    }
+
+    /* Tip box */
+    .tip-box {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px; padding: 16px 20px; margin-top: 12px;
+    }
+    .tip-label { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: rgba(255,255,255,0.35); margin-bottom: 6px; }
+    .tip-text { font-size: 14px; color: rgba(255,255,255,0.65); line-height: 1.6; }
+
+    /* Navigation */
+    .nav {
+      position: fixed; bottom: 28px; right: 28px; display: flex; gap: 10px; z-index: 100;
+    }
+    .nav button {
+      width: 46px; height: 46px; border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.7);
+      border-radius: 11px; cursor: pointer; font-size: 17px; transition: all 0.2s;
+      backdrop-filter: blur(10px);
+    }
+    .nav button:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.25); color: #fff; }
+
+    .progress-bar {
+      position: fixed; bottom: 0; left: 0; height: 2px;
+      background: rgba(255,255,255,0.55); transition: width 0.3s; z-index: 300;
+    }
+    .slide-counter {
+      position: fixed; bottom: 38px; left: 36px; font-size: 13px; color: rgba(255,255,255,0.28);
+    }
+
+    /* Divider */
+    .divider { width: 100%; height: 1px; background: rgba(255,255,255,0.07); margin: 20px 0; }
+
+    /* Small label */
+    .section-label {
+      font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+      color: rgba(255,255,255,0.3); margin-bottom: 12px; font-weight: 600;
+    }
+
+    /* Two-col layout */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; flex: 1; }
+    .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 28px; flex: 1; }
+
+    /* FAQ item */
+    .faq-item { margin-bottom: 20px; }
+    .faq-q { font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 6px; }
+    .faq-a { font-size: 13px; color: rgba(255,255,255,0.55); line-height: 1.65; }
+    .faq-a code {
+      font-family: 'SF Mono','Menlo',monospace; font-size: 11px;
+      background: rgba(255,255,255,0.1); padding: 1px 5px; border-radius: 3px;
+      color: rgba(255,255,255,0.8);
+    }
+  </style>
+</head>
+<body>
+
+<!-- GNB -->
+<nav class="gnb">
+  <div class="gnb-logo">
+    <div class="icon">💻</div>
+    <span>문서 만들기 + Claude Code 마스터</span>
+  </div>
+  <div class="gnb-sections">
+    <div class="gnb-section" onclick="goToSlide(0)">intro</div>
+    <div class="gnb-section" onclick="goToSlide(2)">01 환경세팅</div>
+    <div class="gnb-section" onclick="goToSlide(11)">02 기본조작</div>
+    <div class="gnb-section" onclick="goToSlide(19)">03 문서만들기</div>
+    <div class="gnb-section" onclick="goToSlide(24)">04 PPT만들기</div>
+    <div class="gnb-section" onclick="goToSlide(26)">05 꿀팁</div>
+  </div>
+  <div class="gnb-progress">
+    <span class="gnb-progress-text" id="gnb-progress-text">1 / 32</span>
+    <div class="gnb-progress-bar">
+      <div class="gnb-progress-fill" id="gnb-progress-fill" style="width:3%"></div>
+    </div>
+  </div>
+</nav>
+
+<div class="slides-container" id="slides">
+
+  <!-- SLIDE 0: COVER -->
+  <div class="slide slide-cover active" data-section="intro">
+    <div class="stars-bg"></div>
+    <div class="main-title">Claude Code 마스터<br><span style="font-size:0.55em; font-weight:400; opacity:0.75">(Claude Code 활용하여 문서 만들기)</span></div>
+    <div class="subtitle">바이브코딩으로 실무 결과물 만들기</div>
+    <div class="meta">
+      <div class="name">김은주 &nbsp;·&nbsp; 모두의연구소 KHP팀 팀장</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 1: 타임테이블 -->
+  <div class="slide slide-content" data-section="intro">
+    <div class="slide-number">TIMETABLE</div>
+    <div class="slide-title">오늘의 타임테이블</div>
+    <div class="content">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>시간</th>
+            <th>내용</th>
+            <th>도구</th>
+            <th>결과물</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>20분</strong></td>
+            <td>환경세팅 + Claude Code 소개</td>
+            <td>VSCode, Claude Code</td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><strong>30분</strong></td>
+            <td>기본 조작 + 스킬·MCP·애드온 설치</td>
+            <td>Claude Code</td>
+            <td>환경 세팅 완료</td>
+          </tr>
+          <tr>
+            <td><strong>25분</strong></td>
+            <td>바이브코딩으로 문서 만들기</td>
+            <td>Claude Code</td>
+            <td>문서 (MD→DOCX/HWP)</td>
+          </tr>
+          <tr>
+            <td><strong>25분</strong></td>
+            <td>바이브코딩으로 PPT 만들기</td>
+            <td>Claude Code</td>
+            <td>PPT</td>
+          </tr>
+          <tr>
+            <td><strong>10분</strong></td>
+            <td>꿀팁 공유 + Q&amp;A</td>
+            <td>—</td>
+            <td>—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SLIDE 2: Section 1 -->
+  <div class="slide slide-section" data-section="01 환경세팅">
+    <div class="sec-num">Section 01</div>
+    <div class="sec-title">환경세팅 +<br>Claude Code 소개</div>
+    <div class="sec-desc">코드 에디터 비교, VSCode 화면 구성, Claude Code란 무엇인가</div>
+    <div class="sec-time">⏱ 20분</div>
+  </div>
+
+  <!-- SLIDE 3: 코드 에디터 비교 -->
+  <div class="slide slide-content" data-section="01 환경세팅">
+    <div class="slide-number">1-1</div>
+    <div class="slide-title">코드 에디터 소개: VSCode · Cursor · Antigravity</div>
+    <div class="content">
+      <table class="data-table">
+        <thead>
+          <tr><th>에디터</th><th>만든 곳</th><th>특징</th><th>가격</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>VSCode</strong></td>
+            <td>Microsoft</td>
+            <td>전 세계 1위 에디터. 무료. 확장 프로그램이 풍부</td>
+            <td><span class="badge">무료</span></td>
+          </tr>
+          <tr>
+            <td><strong>Cursor</strong></td>
+            <td>Cursor Inc.</td>
+            <td>VSCode 기반 + AI 기능 내장. 코드 자동완성, AI 채팅이 기본 탑재</td>
+            <td><span class="badge">무료 / Pro $20/월</span></td>
+          </tr>
+          <tr>
+            <td><strong>Antigravity</strong></td>
+            <td>Google (DeepMind)</td>
+            <td>AI 에이전트 중심 IDE. Gemini 3 기본 탑재. 에이전트가 계획→실행→검증까지 자율 수행</td>
+            <td><span class="badge">무료 (프리뷰)</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="divider"></div>
+      <ul class="list small">
+        <li>3개 모두 <strong>터미널이 내장</strong>되어 있어서 Claude Code를 실행할 수 있음</li>
+        <li>VSCode에 익숙하면 Cursor는 거의 같은 화면이라 바로 적응 가능 (VSCode 포크)</li>
+        <li>이 수업에서는 <strong>VSCode</strong>를 기준으로 진행합니다 — 무료이고 가장 범용적이기 때문</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: VSCode 화면 구성 -->
+  <div class="slide slide-content" data-section="01 환경세팅">
+    <div class="slide-number">1-2</div>
+    <div class="slide-title">VSCode 화면 구성</div>
+    <div class="content">
+      <div class="card-grid cols-2">
+        <div>
+          <table class="data-table">
+            <thead><tr><th>영역</th><th>위치</th><th>설명</th></tr></thead>
+            <tbody>
+              <tr><td><strong>사이드바</strong></td><td>왼쪽</td><td>파일 탐색기, 검색, 확장 프로그램 등</td></tr>
+              <tr><td><strong>편집기</strong></td><td>가운데</td><td>파일 내용을 보고 편집하는 메인 영역</td></tr>
+              <tr><td><strong>터미널</strong></td><td>하단</td><td>Claude Code를 실행하는 곳</td></tr>
+              <tr><td><strong>상태바</strong></td><td>맨 아래</td><td>현재 파일 정보, 언어 등 표시</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <div class="section-label">핵심 단축키</div>
+          <table class="data-table">
+            <thead><tr><th>동작</th><th>단축키</th></tr></thead>
+            <tbody>
+              <tr><td>터미널 열기</td><td><code>Ctrl+`</code></td></tr>
+              <tr><td>파일 빠르게 열기</td><td><code>Cmd+P</code> / <code>Ctrl+P</code></td></tr>
+              <tr><td>사이드바 토글</td><td><code>Cmd+B</code> / <code>Ctrl+B</code></td></tr>
+              <tr><td>폴더 열기</td><td>File → Open Folder</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: Claude Code란? -->
+  <div class="slide slide-content" data-section="01 환경세팅">
+    <div class="slide-number">1-4</div>
+    <div class="slide-title">Claude Code란?</div>
+    <div class="content">
+      <div class="highlight-box" style="margin-bottom:28px;">
+        <div class="icon">🤖</div>
+        <div class="text"><strong>Anthropic</strong>이 만든 AI 코딩 도구 — ChatGPT처럼 대화하면서 <strong>실제 파일을 생성·수정·실행</strong>까지 해주는 것이 핵심 차이</div>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>구분</th><th>ChatGPT / 웹 Claude</th><th>Claude Code</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>동작 방식</strong></td>
+            <td>브라우저에서 대화</td>
+            <td>내 컴퓨터에서 직접 파일 생성·수정</td>
+          </tr>
+          <tr>
+            <td><strong>결과물</strong></td>
+            <td>텍스트 답변 (복사해서 붙여넣기)</td>
+            <td>실제 파일이 내 폴더에 저장됨</td>
+          </tr>
+          <tr>
+            <td><strong>활용 범위</strong></td>
+            <td>질문·요약·번역 위주</td>
+            <td>문서, PPT, 웹사이트, 자동화까지</td>
+          </tr>
+          <tr>
+            <td><strong>비용</strong></td>
+            <td>무료/유료 플랜</td>
+            <td>Anthropic API 사용량 기반 (Pro $20/월)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SLIDE 6: 터미널 vs 익스텐션 -->
+  <div class="slide slide-content" data-section="01 환경세팅">
+    <div class="slide-number">1-5</div>
+    <div class="slide-title">Claude Code 사용 방식: 터미널 vs 익스텐션</div>
+    <div class="content">
+      <div class="card-grid cols-2">
+        <div class="compare-card neg">
+          <div class="ctitle">📱 VSCode 익스텐션</div>
+          <ul class="list small">
+            <li>VSCode 사이드바에서 클릭</li>
+            <li>기본 대화 + 코드 편집 위주</li>
+            <li>일부 기능 제한</li>
+            <li>현재 워크스페이스 중심</li>
+          </ul>
+          <div class="tip-box"><div class="tip-label">추천 대상</div><div class="tip-text">가볍게 시작하고 싶은 분</div></div>
+        </div>
+        <div class="compare-card pos">
+          <div class="ctitle">⭐ 터미널 (CLI)</div>
+          <ul class="list small">
+            <li>터미널에서 <code>claude</code> 입력</li>
+            <li>모든 기능 사용 가능</li>
+            <li>/plugins, /skills 등 전체 지원</li>
+            <li>시스템 전체 파일 접근</li>
+          </ul>
+          <div class="tip-box"><div class="tip-label">추천 대상</div><div class="tip-text">본격적으로 활용하고 싶은 분</div></div>
+        </div>
+      </div>
+      <div class="highlight-box" style="margin-top:24px;">
+        <div class="icon">💡</div>
+        <div class="text">이 수업에서는 <strong>터미널 방식</strong>을 사용합니다 — 스킬, 플러그인, MCP 등 Claude Code의 핵심 기능을 전부 쓸 수 있기 때문</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 7: CLI & 터미널 명령어 -->
+  <div class="slide slide-content" data-section="01 환경세팅">
+    <div class="slide-number">1-6 · 1-7</div>
+    <div class="slide-title">CLI란? + 터미널 기본 명령어</div>
+    <div class="content">
+      <div class="two-col">
+        <div>
+          <div class="section-label">CLI (Command Line Interface)</div>
+          <div class="card">
+            <div class="card-desc" style="font-size:15px; line-height:1.7; color:rgba(255,255,255,0.7);">
+              마우스 클릭이 아닌 <strong style="color:#fff">텍스트 명령어</strong>로 컴퓨터를 조작하는 방식<br><br>
+              개발자뿐 아니라 AI 도구를 쓰려면 반드시 알아야 하는 기본기
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="section-label">기본 명령어</div>
+          <table class="data-table">
+            <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+            <tbody>
+              <tr><td><code>ls</code> / <code>dir</code></td><td>현재 폴더 파일 목록 보기</td></tr>
+              <tr><td><code>cd 폴더명</code></td><td>해당 폴더로 이동</td></tr>
+              <tr><td><code>cd .</code></td><td>현재 폴더 (변화 없음)</td></tr>
+              <tr><td><code>cd ..</code></td><td>상위 폴더로 이동</td></tr>
+              <tr><td><code>↑ ↓</code></td><td>이전 명령어 불러오기</td></tr>
+              <tr><td><code>Ctrl+C</code></td><td>실행 중인 명령 중단</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 8: 사전 준비 -->
+  <div class="slide slide-content" data-section="01 환경세팅">
+    <div class="slide-number">1-8</div>
+    <div class="slide-title">사전 준비 (계정 + 에디터 다운로드)</div>
+    <div class="content">
+      <div class="card-grid cols-2">
+        <div>
+          <ul class="list">
+            <li><strong>Google 계정</strong> 준비 (개인 계정)</li>
+            <li><strong>GitHub 가입</strong> — <code>github.com</code> (Google 계정으로 가입 가능)</li>
+          </ul>
+        </div>
+        <div>
+          <ul class="list">
+            <li>
+              <div>
+                <strong>VSCode 다운로드</strong><br>
+                <span style="font-size:13px; color:rgba(255,255,255,0.45);">code.visualstudio.com/download</span><br>
+                <span style="font-size:13px; color:rgba(255,255,255,0.45);">다운로드 후 한 번 열어서 로그인과 업데이트 사전 설정(recommend) 완료</span>
+              </div>
+            </li>
+            <li>
+              <div>
+                <strong>Antigravity 다운로드</strong> (선택)<br>
+                <span style="font-size:13px; color:rgba(255,255,255,0.45);">antigravity.google/download</span><br>
+                <span style="font-size:13px; color:rgba(255,255,255,0.45);">다운로드 후 한 번 열어서 로그인과 업데이트 사전 설정(recommend) 완료</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 9: 설치 Mac -->
+  <div class="slide slide-content" data-section="01 환경세팅">
+    <div class="slide-number">1-9 · Mac</div>
+    <div class="slide-title">Claude Code 설치 — Mac</div>
+    <div class="content">
+      <div class="three-col">
+        <div>
+          <div class="section-label">Step 1. Homebrew 설치</div>
+          <div class="code-block">
+            <span class="comment"># 버전 확인</span><br>
+            <span class="hl">brew --version</span><br><br>
+            <span class="comment"># 설치 안 됐다면</span><br>
+            /bin/bash -c "$(curl -fsSL<br>
+            &nbsp;&nbsp;brew.sh/install.sh)"
+          </div>
+          <div class="tip-box" style="margin-top:10px;"><div class="tip-text">Homebrew: Mac용 패키지 관리자</div></div>
+        </div>
+        <div>
+          <div class="section-label">Step 2. Node.js 설치</div>
+          <div class="code-block">
+            <span class="comment"># 버전 확인</span><br>
+            <span class="hl">node --version</span><br>
+            <span class="hl">npm --version</span><br><br>
+            <span class="comment"># 설치 안 됐다면</span><br>
+            brew install node
+          </div>
+          <div class="tip-box" style="margin-top:10px;"><div class="tip-text">Node.js: Claude Code의 실행 환경</div></div>
+        </div>
+        <div>
+          <div class="section-label">Step 3. Claude Code 설치</div>
+          <div class="code-block">
+            curl -fsSL<br>
+            <span class="hl">https://claude.ai/install.sh</span><br>
+            | bash
+          </div>
+          <div class="tip-box" style="margin-top:10px;"><div class="tip-text">설치 완료 후 <code style="font-size:12px;background:rgba(255,255,255,0.12);padding:1px 5px;border-radius:3px;color:#fff;">claude</code> 명령어로 실행</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 10: 설치 Windows -->
+  <div class="slide slide-content" data-section="01 환경세팅">
+    <div class="slide-number">1-9 · Windows</div>
+    <div class="slide-title">Claude Code 설치 — Windows (PowerShell)</div>
+    <div class="content">
+      <div class="card-grid cols-2">
+        <div>
+          <div class="section-label">Step 1–2: Node.js + Git 설치</div>
+          <ul class="list small">
+            <li><code>nodejs.org/ko</code> → LTS 버전 다운로드 후 설치</li>
+            <li><code>git-scm.com/install/windows</code> → 기본 옵션으로 설치</li>
+          </ul>
+          <div class="section-label" style="margin-top:16px;">Step 3: 실행 정책 변경</div>
+          <div class="code-block">Set-ExecutionPolicy RemoteSigned<br>-Scope CurrentUser<br><span class="comment"># "Y" 입력 → 한 번만 하면 됨</span></div>
+          <div class="section-label" style="margin-top:16px;">Step 4: Claude Code 설치</div>
+          <div class="code-block"><span class="hl">irm https://claude.ai/install.ps1 | iex</span></div>
+        </div>
+        <div>
+          <div class="section-label">설치 트러블슈팅</div>
+          <table class="data-table">
+            <thead><tr><th>증상</th><th>해결 방법</th></tr></thead>
+            <tbody>
+              <tr><td>"command not found"</td><td>터미널을 완전히 닫고 다시 열기</td></tr>
+              <tr><td>"permission denied"</td><td>Mac: 명령어 앞에 <code>sudo</code> 붙이기</td></tr>
+              <tr><td>그래도 안 될 때</td><td>에러 메시지 복사 → Claude/ChatGPT에 물어보기</td></tr>
+              <tr><td>is not in your PATH</td><td>Claude에 "PATH 환경변수 추가해줘" 요청</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 11: Section 2 -->
+  <div class="slide slide-section" data-section="02 기본조작">
+    <div class="sec-num">Section 02</div>
+    <div class="sec-title">기본 조작 +<br>스킬 설치</div>
+    <div class="sec-desc">슬래시 커맨드, 단축키, 스킬·플러그인·MCP 활용법</div>
+    <div class="sec-time">⏱ 30분</div>
+  </div>
+
+  <!-- SLIDE 12: 실행 & Allow -->
+  <div class="slide slide-content" data-section="02 기본조작">
+    <div class="slide-number">1-10 · 1-11</div>
+    <div class="slide-title">Claude Code 실행 + Allow? 권한 확인</div>
+    <div class="content">
+      <div class="card-grid cols-2">
+        <div>
+          <div class="section-label">실행 방법 (Mac/Windows 공통)</div>
+          <div class="code-block">
+            <span class="comment"># 작업할 폴더로 이동 후</span><br>
+            <span class="hl">claude</span>
+          </div>
+          <ul class="list small" style="margin-top:14px;">
+            <li>처음 실행 시 Anthropic 로그인 필요 (브라우저 자동 열림)</li>
+            <li>로그인 완료 후 프롬프트 입력 대기 상태 = 준비 완료</li>
+          </ul>
+        </div>
+        <div>
+          <div class="section-label">Allow? 권한 확인 팝업</div>
+          <div class="card">
+            <div class="card-desc" style="font-size:14px; color:rgba(255,255,255,0.7); line-height:1.7;">
+              파일을 만들거나 명령어를 실행할 때 <strong style="color:#fff">"Allow?"</strong>라고 물어봄<br><br>
+              → <strong style="color:#fff">y</strong> 를 누르면 허용 (보안을 위한 기능)
+            </div>
+          </div>
+          <div class="tip-box" style="margin-top:12px;">
+            <div class="tip-label">💡 꿀팁</div>
+            <div class="tip-text">매번 귀찮다면 <code>--dangerously-skip-permissions</code> 옵션 사용 (꿀팁 섹션 참고)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 13: 슬래시 커맨드 -->
+  <div class="slide slide-content" data-section="02 기본조작">
+    <div class="slide-number">2-1</div>
+    <div class="slide-title">슬래시 커맨드</div>
+    <div class="content">
+      <div class="highlight-box" style="margin-bottom:24px;">
+        <div class="icon">⌨️</div>
+        <div class="text"><code style="font-size:16px; background:rgba(255,255,255,0.12); padding:2px 8px; border-radius:4px; color:#fff;">/</code> 를 입력하면 메뉴가 열림 — 실습 전에 이것부터 익혀둡니다</div>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>커맨드</th><th>설명</th></tr></thead>
+        <tbody>
+          <tr><td><code>/model</code></td><td>사용할 AI 모델 변경</td></tr>
+          <tr><td><code>/login</code> / <code>/logout</code></td><td>Anthropic 계정 로그인/로그아웃</td></tr>
+          <tr><td><code>/skills</code></td><td>사용 가능한 스킬 목록 확인</td></tr>
+          <tr><td><code>/plugins</code></td><td>플러그인 설치·관리</td></tr>
+          <tr><td><code>/powerup</code></td><td>대화형 튜토리얼 실행</td></tr>
+          <tr><td><code>/clear</code></td><td>대화 내역 초기화</td></tr>
+          <tr><td><code>/compact</code></td><td>컨텍스트 압축</td></tr>
+          <tr><td><code>/help</code></td><td>도움말</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SLIDE 14: 단축키 -->
+  <div class="slide slide-content" data-section="02 기본조작">
+    <div class="slide-number">2-2</div>
+    <div class="slide-title">키보드 단축키</div>
+    <div class="content">
+      <div class="card-grid cols-2" style="margin-bottom:28px;">
+        <div class="card">
+          <div class="card-icon">⌨️</div>
+          <div class="card-title"><code>Cmd+V</code> / <code>Ctrl+V</code></div>
+          <div class="card-desc">붙여넣기 (이미지도 가능)<br>스크린샷을 바로 붙여넣어서 "이 디자인 참고해줘"도 가능</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">⏹</div>
+          <div class="card-title"><code>Esc</code></div>
+          <div class="card-desc">현재 작업 중단</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🛑</div>
+          <div class="card-title"><code>Ctrl+C</code></div>
+          <div class="card-desc">Claude Code 완전 종료 (터미널로 돌아감)</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🧠</div>
+          <div class="card-title">추론 모드 (Extended Thinking)</div>
+          <div class="card-desc"><code>/model</code> 에서 모델 선택 시 함께 설정합니다</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 15: 스킬이란? -->
+  <div class="slide slide-content" data-section="02 기본조작">
+    <div class="slide-number">2-3</div>
+    <div class="slide-title">스킬이란?</div>
+    <div class="content">
+      <div class="highlight-box" style="margin-bottom:28px;">
+        <div class="icon">📋</div>
+        <div class="text">스킬은 Claude Code에게 주는 <strong>업무 매뉴얼</strong>. 한 번 설치하면 "PPT 만들어줘"라고만 말해도 자동으로 해당 스킬이 실행됩니다.</div>
+      </div>
+      <div class="card-grid cols-3">
+        <div class="card">
+          <div class="card-icon">🔁</div>
+          <div class="card-title">프롬프트 vs 스킬</div>
+          <div class="card-desc">프롬프트는 매번 처음부터 입력해야 하지만, 스킬은 한 번 만들면 <strong style="color:#fff">자동 트리거</strong></div>
+        </div>
+        <div class="card">
+          <div class="card-icon">✅</div>
+          <div class="card-title">일관성</div>
+          <div class="card-desc">같은 요청이어도 프롬프트만으로는 결과가 달라짐 → 스킬은 포맷과 체크리스트로 <strong style="color:#fff">품질 고정</strong></div>
+        </div>
+        <div class="card">
+          <div class="card-icon">⚡</div>
+          <div class="card-title">컨텍스트 효율</div>
+          <div class="card-desc">평소 이름+설명만 올라가 있다가 호출될 때만 전체 내용 로딩 <strong style="color:#fff">(Lazy Loading)</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 16: 플러그인 설치 -->
+  <div class="slide slide-content" data-section="02 기본조작">
+    <div class="slide-number">2-4 · 2-5</div>
+    <div class="slide-title">플러그인 설치 + 필수 스킬</div>
+    <div class="content">
+      <div class="card-grid cols-2">
+        <div>
+          <div class="section-label">설치 방법</div>
+          <div class="code-block">
+            <span class="comment"># Claude Code 안에서 실행</span><br>
+            <span class="hl">/plugins</span><br>
+            <span class="comment"># → Marketplace → 검색 → Install</span>
+          </div>
+        </div>
+        <div>
+          <div class="section-label">필수 설치 스킬</div>
+          <table class="data-table">
+            <thead><tr><th>#</th><th>검색어</th><th>설명</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td><code>pptx</code></td><td>PPTX 파일 생성·읽기·수정</td></tr>
+              <tr><td>2</td><td><code>docx</code></td><td>DOCX 워드 문서 생성·읽기·수정</td></tr>
+              <tr><td>3</td><td><code>hwp</code></td><td>HWP 한글 문서 생성·읽기·수정</td></tr>
+              <tr><td>4</td><td><code>superpowers</code></td><td>브레인스토밍, 플랜 작성 등 고급 워크플로우</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 17: Superpowers & MCP -->
+  <div class="slide slide-content" data-section="02 기본조작">
+    <div class="slide-number">2-6 · 2-7</div>
+    <div class="slide-title">Superpowers 브레인스토밍 + MCP</div>
+    <div class="content">
+      <div class="two-col">
+        <div>
+          <div class="section-label">Superpowers: 브레인스토밍 스킬</div>
+          <div class="card" style="margin-bottom:14px;">
+            <div class="card-desc" style="font-size:14px; color:rgba(255,255,255,0.7); line-height:1.7;">
+              문서나 PPT를 바로 만들기 전에 <strong style="color:#fff">먼저 브레인스토밍으로 기획</strong>을 잡으면 결과물 품질이 확 올라갑니다
+            </div>
+          </div>
+          <div class="section-label">사용 흐름</div>
+          <div class="flow" style="flex-direction:column; align-items:flex-start; gap:10px;">
+            <div class="step-row">
+              <div class="step-num">1</div>
+              <div class="step-body"><div class="step-title">"기획해줘" → brainstorming 트리거</div></div>
+            </div>
+            <div class="step-row">
+              <div class="step-num">2</div>
+              <div class="step-body"><div class="step-title">Claude가 목적·대상·구성 등을 질문하며 함께 기획</div></div>
+            </div>
+            <div class="step-row">
+              <div class="step-num">3</div>
+              <div class="step-body"><div class="step-title">"이걸로 문서 만들어줘"로 바로 연결</div></div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="section-label">MCP (Model Context Protocol)</div>
+          <div class="card">
+            <div class="card-icon">🔌</div>
+            <div class="card-desc" style="font-size:14px; color:rgba(255,255,255,0.7); line-height:1.75;">
+              외부 도구/서비스와 Claude Code를 연결하는 프로토콜<br><br>
+              비유하면 Claude Code에 <strong style="color:#fff">USB 포트를 꽂는 것</strong><br>
+              — 웹 검색, 데이터베이스, 캘린더 등을 Claude가 직접 사용 가능
+            </div>
+          </div>
+          <div class="tip-box" style="margin-top:12px;">
+            <div class="tip-label">커스텀 명령어 (스킬 직접 만들기)</div>
+            <div class="tip-text">자주 쓰는 프롬프트를 <code>.md</code> 파일로 저장해 재사용 · 팀 내 워크플로우 표준화 (3차시에서 다룹니다)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 18: /powerup -->
+  <div class="slide slide-content" data-section="02 기본조작">
+    <div class="slide-number">2-9 · 2-10</div>
+    <div class="slide-title">추천 애드온 + /powerup 튜토리얼</div>
+    <div class="content">
+      <div class="card-grid cols-2">
+        <div>
+          <div class="section-label">추천 애드온</div>
+          <div class="card">
+            <div class="card-icon">🔧</div>
+            <div class="card-title">chongdashu/cc-statusline</div>
+            <div class="card-desc">Claude Code 상태바를 커스터마이즈하는 애드온</div>
+          </div>
+        </div>
+        <div>
+          <div class="section-label">/powerup — 터미널 내 대화형 튜토리얼</div>
+          <div class="code-block"><span class="hl">/powerup</span></div>
+          <ul class="list small" style="margin-top:14px;">
+            <li>18개 레슨 제공 (레슨당 3~10분)</li>
+            <li>화살표 키로 레슨 선택 → 애니메이션 데모</li>
+            <li>Context 관리, Hooks, MCP, Subagent, <code>/loop</code> 등 주요 기능 커버</li>
+            <li>별도 설치 없이 내장 (v2.1.90+)</li>
+          </ul>
+          <div class="tip-box" style="margin-top:12px;">
+            <div class="tip-label">💡 활용</div>
+            <div class="tip-text">혼자 복습하거나 추가 기능을 배우고 싶을 때 사용합니다</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 19: Section 3 -->
+  <div class="slide slide-section" data-section="03 문서만들기">
+    <div class="sec-num">Section 03</div>
+    <div class="sec-title">바이브코딩으로<br>문서 만들기</div>
+    <div class="sec-desc">마크다운 → DOCX/HWP 변환 실습</div>
+    <div class="sec-time">⏱ 25분</div>
+  </div>
+
+  <!-- SLIDE 20: 바이브코딩이란? + 마크다운 -->
+  <div class="slide slide-content" data-section="03 문서만들기">
+    <div class="slide-number">3</div>
+    <div class="slide-title">바이브코딩이란? + 마크다운(MD)</div>
+    <div class="content">
+      <div class="two-col">
+        <div>
+          <div class="section-label">바이브코딩 (Vibe Coding)</div>
+          <div class="highlight-box">
+            <div class="icon">💬</div>
+            <div class="text">AI와 <strong>자연어로 대화하면서</strong> 결과물을 만드는 방식 — 코딩을 몰라도 "~만들어줘"라고 말하면 Claude가 알아서 파일을 생성해줌</div>
+          </div>
+        </div>
+        <div>
+          <div class="section-label">마크다운(MD)이란?</div>
+          <div class="card">
+            <div class="card-desc" style="font-size:14px; color:rgba(255,255,255,0.7); line-height:1.7;">
+              <code>#</code> 제목, <code>##</code> 소제목, <code>-</code> 목록, <code>|</code> 표 등 <strong style="color:#fff">간단한 기호로 문서를 구조화</strong>하는 형식<br><br>
+              수정이 빠르고 구조가 한눈에 보여서, 내용을 다듬는 데 최적
+            </div>
+          </div>
+          <div class="code-block" style="margin-top:12px; font-size:12px;">
+            <span class="comment"># 제안서 제목</span><br>
+            ## 1. 사업 목표<br>
+            - 목표 1<br>
+            - 목표 2<br>
+            ## 2. 추진 체계<br>
+            | 역할 | 담당 |<br>
+            |------|------|<br>
+            | PM | 김은주 |
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 21: 실습 Step 1 -->
+  <div class="slide slide-content" data-section="03 문서만들기">
+    <div class="slide-number">실습 3-1</div>
+    <div class="slide-title">정부 제안서 만들기 — Step 1: MD로 내용/구조 먼저 잡기</div>
+    <div class="content">
+      <div class="section-label">예시 프롬프트</div>
+      <div class="code-block" style="margin-bottom:20px;">
+        정부 R&D 과제 제안서를 마크다운으로 작성해줘.<br>
+        - 사업명: <span class="hl">2026년 중소기업 AI 도입 지원 사업</span><br>
+        - 과제명: AI 기반 업무 자동화 플랫폼 개발<br>
+        - 총 사업비: 3억원 / 사업기간: 12개월<br>
+        - 주관기관, 사업 목표, 추진 체계, 기대효과 포함
+      </div>
+      <div class="section-label">이 단계에서 자유롭게 수정</div>
+      <div class="card-grid cols-2">
+        <div class="card">
+          <div class="card-desc" style="color:rgba(255,255,255,0.7); font-size:14px; line-height:1.7;">
+            "추진 체계에 외부 자문위원회 추가해줘"
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-desc" style="color:rgba(255,255,255,0.7); font-size:14px; line-height:1.7;">
+            "기대효과를 정량적 수치로 바꿔줘"
+          </div>
+        </div>
+      </div>
+      <div class="tip-box" style="margin-top:16px;">
+        <div class="tip-label">생성된 파일은 어디에?</div>
+        <div class="tip-text">Claude Code가 만든 파일은 <code>claude</code>를 실행한 폴더에 저장됩니다. VSCode 사이드바에서 바로 확인 가능</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 22: 실습 Step 2 -->
+  <div class="slide slide-content" data-section="03 문서만들기">
+    <div class="slide-number">실습 3-2</div>
+    <div class="slide-title">정부 제안서 만들기 — Step 2: DOCX / HWP로 변환</div>
+    <div class="content">
+      <div class="section-label">내용이 확정되면 실제 제출용 파일 포맷으로 변환</div>
+      <div class="card-grid cols-2" style="margin-bottom:24px;">
+        <div class="card">
+          <div class="card-icon">📄</div>
+          <div class="card-title">DOCX 변환</div>
+          <div class="code-block" style="font-size:13px; margin-top:10px;">이 제안서를 docx 파일로 만들어줘</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">📝</div>
+          <div class="card-title">HWP 변환</div>
+          <div class="code-block" style="font-size:13px; margin-top:10px;">이 제안서를 hwp 파일로 만들어줘</div>
+        </div>
+      </div>
+      <div class="section-label">핵심 포인트</div>
+      <ul class="list small">
+        <li><strong>MD 먼저 → 변환 나중에</strong>: 내용/구조를 먼저 잡고, 확정 후 포맷 변환하는 게 효율적</li>
+        <li>구체적으로 요청할수록 결과물이 좋아짐</li>
+        <li>한 번에 완성하려 하지 말고 대화하면서 수정해나가기</li>
+        <li>MD 단계에서 충분히 다듬어야 변환 후 재작업이 줄어듦</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- SLIDE 23: Section 4 -->
+  <div class="slide slide-section" data-section="04 PPT만들기">
+    <div class="sec-num">Section 04</div>
+    <div class="sec-title">바이브코딩으로<br>PPT 만들기</div>
+    <div class="sec-desc">프롬프트로 PPTX 슬라이드 생성하기</div>
+    <div class="sec-time">⏱ 25분</div>
+  </div>
+
+  <!-- SLIDE 24: PPT 실습 -->
+  <div class="slide slide-content" data-section="04 PPT만들기">
+    <div class="slide-number">실습 4</div>
+    <div class="slide-title">프레젠테이션 슬라이드 생성</div>
+    <div class="content">
+      <div class="section-label">예시 프롬프트</div>
+      <div class="code-block" style="margin-bottom:20px;">
+        위에서 만든 제안서 내용을 기반으로 발표용 PPT를 만들어줘.<br>
+        - <span class="hl">10장 내외</span><br>
+        - 깔끔한 비즈니스 스타일<br>
+        - 각 슬라이드에 핵심 메시지 하나씩
+      </div>
+      <div class="section-label">핵심 포인트</div>
+      <div class="card-grid cols-3">
+        <div class="card">
+          <div class="card-icon">🔄</div>
+          <div class="card-title">문서 → PPT 변환</div>
+          <div class="card-desc">"이 문서를 PPT로 만들어줘"로도 가능</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🎨</div>
+          <div class="card-title">디자인 지정</div>
+          <div class="card-desc">톤앤매너를 구체적으로 지정하면 품질 향상</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">📊</div>
+          <div class="card-title">차트·표·아이콘</div>
+          <div class="card-desc">요소별로 추가 요청 가능</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 25: Section 5 -->
+  <div class="slide slide-section" data-section="05 꿀팁">
+    <div class="sec-num">Section 05</div>
+    <div class="sec-title">꿀팁 공유<br>+ Q&amp;A</div>
+    <div class="sec-desc">실무 꿀팁, 자주 묻는 질문 정리</div>
+    <div class="sec-time">⏱ 10분</div>
+  </div>
+
+  <!-- SLIDE 26: 실무 꿀팁 -->
+  <div class="slide slide-content" data-section="05 꿀팁">
+    <div class="slide-number">5-1</div>
+    <div class="slide-title">실무 꿀팁</div>
+    <div class="content">
+      <div class="card-grid cols-2">
+        <div>
+          <ul class="list small">
+            <li><strong>대화를 이어가라</strong> — 한 번에 완성하려 하지 말고, 여러 번 수정 요청하며 완성도 높이기</li>
+            <li><strong>구체적으로 요청하라</strong> — "보고서 만들어줘" → "A4 2장, 표 포함, 파란색 톤의 마케팅 보고서 만들어줘"</li>
+            <li><strong>결과물을 바로 확인하라</strong> — HTML은 브라우저에서, DOCX는 Word에서 바로 열어서 확인</li>
+            <li><strong>컨텍스트를 활용하라</strong> — 이전 대화 내용을 기반으로 후속 작업 요청 가능</li>
+          </ul>
+        </div>
+        <div>
+          <div class="section-label">--dangerously-skip-permissions 옵션</div>
+          <div class="code-block" style="margin-bottom:14px;">
+            claude <span class="hl">--dangerously-skip-permissions</span>
+          </div>
+          <ul class="list small">
+            <li>파일 생성, 수정, 명령어 실행 등을 매번 승인하지 않아도 됨</li>
+            <li>실습할 때 흐름이 끊기지 않아서 편리</li>
+            <li>⚠️ 이름 그대로 "위험하게 권한을 건너뛰는 것" — 중요한 프로젝트에서는 주의</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 27: FAQ 1 -->
+  <div class="slide slide-content" data-section="05 꿀팁">
+    <div class="slide-number">FAQ · 설치/실행</div>
+    <div class="slide-title">자주 묻는 질문 — 설치·실행 관련</div>
+    <div class="content">
+      <div class="card-grid cols-2">
+        <div>
+          <div class="faq-item">
+            <div class="faq-q">Q. 코딩을 전혀 모르는데 따라할 수 있나요?</div>
+            <div class="faq-a">네. Claude Code는 코딩을 대신 해주는 도구입니다. "~만들어줘"라고 말하면 Claude가 코드를 작성합니다. 이 수업에서 코드를 직접 짤 일은 없습니다.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q">Q. Claude Code는 무료인가요?</div>
+            <div class="faq-a">Claude Code 자체는 무료로 설치할 수 있지만, 사용할 때 Anthropic API 비용이 발생합니다. Pro 플랜($20/월)에 가입하면 실습 수준에서는 충분합니다.</div>
+          </div>
+        </div>
+        <div>
+          <div class="faq-item">
+            <div class="faq-q">Q. 설치가 안 돼요 / 에러가 나요.</div>
+            <div class="faq-a">가장 흔한 원인은 Node.js가 설치되지 않은 경우입니다. <code>node -v</code>를 터미널에 입력해서 버전이 나오는지 확인하세요.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q">Q. "Permission denied" 에러가 나요.</div>
+            <div class="faq-a">Mac에서 npm 설치 시 권한 문제가 생길 수 있습니다. 명령어 앞에 <code>sudo</code>를 붙여보세요: <code>sudo npm install -g @anthropic-ai/claude-code</code></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 28: FAQ 2 -->
+  <div class="slide slide-content" data-section="05 꿀팁">
+    <div class="slide-number">FAQ · 사용법</div>
+    <div class="slide-title">자주 묻는 질문 — 사용법 관련</div>
+    <div class="content">
+      <div class="card-grid cols-2">
+        <div>
+          <div class="faq-item">
+            <div class="faq-q">Q. Claude Code가 멈춘 것 같아요. 반응이 없어요.</div>
+            <div class="faq-a"><code>Esc</code>를 눌러서 중단하고, <code>/clear</code>로 대화를 초기화한 후 다시 시도하세요. 긴 작업 중에는 1~2분 기다려보세요.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q">Q. 결과물이 마음에 안 들면 어떻게 하나요?</div>
+            <div class="faq-a">그냥 자연어로 수정 요청하면 됩니다. "표를 추가해줘", "색상을 파란색으로 바꿔줘", "2페이지를 다시 만들어줘"처럼 원하는 부분을 구체적으로 말하세요.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q">Q. "Allow?" 팝업이 계속 뜨는데 안 뜨게 할 수 있나요?</div>
+            <div class="faq-a"><code>claude --dangerously-skip-permissions</code>로 실행하면 모든 권한을 자동 허용합니다.</div>
+          </div>
+        </div>
+        <div>
+          <div class="faq-item">
+            <div class="faq-q">Q. 만든 파일을 다른 사람한테 보내려면요?</div>
+            <div class="faq-a">Claude Code가 생성한 파일은 내 컴퓨터 폴더에 실제 파일로 저장됩니다. DOCX, HWP, PPTX 등 일반 파일이므로 이메일, 메신저로 바로 전송할 수 있습니다.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q">Q. 대화 내용이 날아갔어요.</div>
+            <div class="faq-a"><code>claude --continue</code>를 입력하면 직전 대화를 이어서 할 수 있습니다. 이전에 생성한 파일은 폴더에 그대로 남아 있으므로 새 대화에서도 작업을 이어갈 수 있습니다.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q">Q. ChatGPT처럼 이미지도 보여줄 수 있나요?</div>
+            <div class="faq-a">Claude Code는 이미지를 화면에 보여주지는 않지만, 이미지를 읽고 분석할 수 있고, HTML/PPT 안에 이미지를 넣을 수 있습니다. <code>Cmd+V</code>로 스크린샷을 붙여넣어서 "이 디자인 참고해서 만들어줘"도 가능합니다.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 29: 다음 차시 예고 -->
+
+
+</div>
+
+<!-- 네비게이션 -->
+<div class="nav">
+  <button onclick="prevSlide()">←</button>
+  <button onclick="nextSlide()">→</button>
+</div>
+<div class="progress-bar" id="progress-bar" style="width:3%"></div>
+<div class="slide-counter" id="slide-counter">1 / 29</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+
+  const sections = [
+    { id: 'intro', range: [0, 1] },
+    { id: '01 환경세팅', range: [2, 10] },
+    { id: '02 기본조작', range: [11, 18] },
+    { id: '03 문서만들기', range: [19, 22] },
+    { id: '04 PPT만들기', range: [23, 24] },
+    { id: '05 꿀팁', range: [25, 29] },
+  ];
+
+  function goToSlide(n) {
+    slides[current].classList.remove('active');
+    current = Math.max(0, Math.min(total - 1, n));
+    slides[current].classList.add('active');
+    updateUI();
+  }
+
+  function nextSlide() { goToSlide(current + 1); }
+  function prevSlide() { goToSlide(current - 1); }
+
+  function updateUI() {
+    const pct = ((current + 1) / total) * 100;
+    document.getElementById('progress-bar').style.width = pct + '%';
+    document.getElementById('gnb-progress-fill').style.width = pct + '%';
+    document.getElementById('gnb-progress-text').textContent = (current + 1) + ' / ' + total;
+    document.getElementById('slide-counter').textContent = (current + 1) + ' / ' + total;
+
+    document.querySelectorAll('.gnb-section').forEach((el, i) => {
+      const sec = sections[i];
+      if (sec && current >= sec.range[0] && current <= sec.range[1]) {
+        el.classList.add('active');
+      } else {
+        el.classList.remove('active');
+      }
+    });
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextSlide();
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prevSlide();
+  });
+
+  // Swipe support
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 50) { dx < 0 ? nextSlide() : prevSlide(); }
+  });
+
+  updateUI();
+</script>
+</body>
+</html>
